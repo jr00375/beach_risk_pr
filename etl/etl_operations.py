@@ -116,11 +116,11 @@ def save_to_s3(clean_data: pd.DataFrame):
 
     s3_path = s3_directory
     s3_key = file_prefix + file_date + file_suffix
-    s3_address = s3_path + s3_key
+    s3_address = s3_path + '/' + s3_key
 
     try:
         df.to_csv(s3_address, sep='|', index=False)
         print("DataFrame uploaded to S3 successfully.")
-    except:
-        print("An error occurred sending to S3.")
+    except Exception as e:
+        print(f"An error occurred sending to S3: {e}")
 
