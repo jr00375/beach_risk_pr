@@ -30,8 +30,8 @@ def get_highres_risk_level() -> pd.DataFrame:
     try:
         df = pd.read_csv(url, sep="|", names=['sju_ripprob'])
         print("Data successfully extracted from NWPS website.")
-    except:
-        print("Failed to extract data from NWPS website.")
+    except Exception as e:
+        raise RuntimeError(f"Failed to extract data from NWPS website: {e}") from e
 
     # Transform risk level data into dataframe with appropriate names
     df = df['sju_ripprob'].str.split('|', expand=True)
