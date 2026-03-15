@@ -12,6 +12,7 @@ aws_access_key_id = st.secrets["AWS_ACCESS_KEY_ID"]
 aws_secret_access_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
 
 
+@st.cache_data(ttl=3600)
 def get_beach_data():
     """
     Retrieve processed beach data from S3
@@ -28,7 +29,7 @@ def get_beach_data():
     # Find CSV files
     csv_files = [obj['Key'] for obj in response['Contents'] if obj['Key'].lower().endswith('.csv')]
 
-    # # Get the most recent CSV file
+    # Get the most recent CSV file
     most_recent_csv = max(csv_files, key=lambda obj: s3.head_object(Bucket=s3_bucket_name, Key=obj)['LastModified'])
 
     clean_data = pd.read_csv('s3://' + s3_bucket_name + '/' + most_recent_csv, sep='|')
@@ -36,13 +37,16 @@ def get_beach_data():
     return clean_data
 
 
+@st.cache_data(ttl=3600)
+def get_geocode_data():
+    return pd.read_csv(s3_directory + 'highres_geocode_beaches.csv')
+
+
 def filter_df_with_input(df):
     """
     Filter dataframe based on user input
     """
-    # beach_names = list(gdf["name"].unique())
     beach_names = list(set(df["name"]))
-
     beach_names.append('All Beaches')
 
     # Enter user input, where default input is "all beaches"
@@ -53,6 +57,10 @@ def filter_df_with_input(df):
 def plot_beach_map():
     df = get_beach_data()
     df["color"] = df["color"].replace({'gray': 'green', 'yellow': 'orange', 'red': 'red'})
+
+    # Show last updated timestamp
+    last_updated = pd.to_datetime(df["date_time"]).max()
+    st.caption(f"Last updated: {last_updated.strftime('%B %d, %Y %I:%M %p')}")
 
     # Provide list of beaches so user has options to choose from
     options = filter_df_with_input(df)
@@ -75,7 +83,6 @@ def plot_beach_map():
             location=[lat, lon],
             popup="{}".format(r["name"]),
             icon=folium.Icon(color=r["color"], icon_color=r["color"], icon="empty")
-            # popup="{} <br>".format(r["name"]),
         ).add_to(m)
 
     # Plot the map
@@ -85,39 +92,34 @@ def plot_beach_map():
 
 
 def beach_table(beach_selection):
-
-    df = pd.read_csv(s3_directory + '/highres_geocode_beaches.csv')
-    # df = df.query("name.isin(@beach_selection)")
+    df = get_geocode_data()
+    df = df.query("name.isin(@beach_selection['name'].tolist())")
     df['beach_town'] = df['town'].combine_first(df['county']).combine_first(df['city'])
     display_columns = ['name', 'google_maps_link', 'risk_level', 'beach_town']
     df = df[display_columns]
 
     def highlight_df(val):
-        """
-        Function to apply conditional styling to pandas dataframe
-        """
-        if 'LOW' in val:
+        if val and 'LOW' in val:
             return 'background-color: green;'
-        elif 'MODERATE' in val:
+        elif val and 'MODERATE' in val:
             return 'background-color: orange;'
-        elif 'HIGH' in val:
+        elif val and 'HIGH' in val:
             return 'background-color: red;'
 
-    # Apply the styling function to the DataFrame
-    styled_df = df.style.applymap(highlight_df, subset=['risk_level'])
+    styled_df = df.style.map(highlight_df, subset=['risk_level'])
 
     return styled_df
 
 
-st.set_page_config(layout="wide", page_title="Puerto Rico Beach Rip Currents")  # Adjust layout based on content
+st.set_page_config(layout="wide", page_title="Puerto Rico Beach Rip Currents")
 
 streamlit_analytics.start_tracking()
 
 st.title('Puerto Rico Beach Risk Levels')
 st.markdown(
     """
-    This is experimental rip current risk data (sourced primarily from the National Weather Prediction Service). 
-    Maritime conditions can change quickly, so please always be cautious when going to the beach. For more information on rip current safety, visit https://www.weather.gov/safety/ripcurrent . 
+    This is experimental rip current risk data (sourced primarily from the National Weather Prediction Service).
+    Maritime conditions can change quickly, so please always be cautious when going to the beach. For more information on rip current safety, visit https://www.weather.gov/safety/ripcurrent .
     """
 )
 streamlit_analytics.stop_tracking()
@@ -126,7 +128,7 @@ streamlit_analytics.stop_tracking()
 beach_selection = plot_beach_map()
 
 st.dataframe(
-    beach_table(beach_selection),  # provide filtered df
+    beach_table(beach_selection),
     column_order=("name", "risk_level", "beach_town", "google_maps_link"),
     column_config={
         "name": "Beach Name",
@@ -136,8 +138,3 @@ st.dataframe(
     },
     hide_index=True, use_container_width=True
 )
-
-
-
-
-
