@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import etl_operations as etl
 
 # Extract and clean data from national predictive weather services; assign rip current risk level to beaches in PR

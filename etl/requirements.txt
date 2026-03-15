@@ -7,3 +7,4 @@ shapely==2.0.1
 streamlit-folium==0.11.0
 fsspec
 s3fs
+python-dotenv
