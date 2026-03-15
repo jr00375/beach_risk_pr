@@ -3,14 +3,13 @@ import streamlit as st
 from streamlit_folium import folium_static
 import pandas as pd
 import boto3
-import os
 import streamlit_analytics
 
-s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
-s3_directory = os.environ.get('S3_BUCKET_DIRECTORY')
+s3_bucket_name = st.secrets["S3_BUCKET_NAME"]
+s3_directory = st.secrets["S3_BUCKET_DIRECTORY"]
 
-aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+aws_access_key_id = st.secrets["AWS_ACCESS_KEY_ID"]
+aws_secret_access_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
 
 
 def get_beach_data():
