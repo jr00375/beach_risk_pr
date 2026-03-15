@@ -4,7 +4,6 @@ from streamlit_folium import folium_static
 import pandas as pd
 import boto3
 import streamlit_analytics
-
 s3_bucket_name = st.secrets["S3_BUCKET_NAME"]
 s3_directory = st.secrets["S3_BUCKET_DIRECTORY"]
 
@@ -30,11 +29,9 @@ def get_beach_data():
     # List objects in the bucket
     response = s3.list_objects_v2(Bucket=s3_bucket_name, Prefix='clean_data')
 
-    # Find CSV files
-    csv_files = [obj['Key'] for obj in response['Contents'] if obj['Key'].lower().endswith('.csv')]
-
-    # Get the most recent CSV file
-    most_recent_csv = max(csv_files, key=lambda obj: s3.head_object(Bucket=s3_bucket_name, Key=obj)['LastModified'])
+    # Find the most recent CSV file (LastModified is already in the listing)
+    csv_objects = [obj for obj in response['Contents'] if obj['Key'].lower().endswith('.csv')]
+    most_recent_csv = max(csv_objects, key=lambda obj: obj['LastModified'])['Key']
 
     clean_data = pd.read_csv(s3_uri(most_recent_csv), sep='|')
 

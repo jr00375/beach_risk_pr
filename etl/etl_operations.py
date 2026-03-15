@@ -4,6 +4,7 @@ import datetime as dt
 import geopandas as gpd
 from shapely import wkt
 import os
+from utils import s3_uri as _s3_uri
 
 s3_directory = os.environ.get('S3_BUCKET_DIRECTORY')
 aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
@@ -11,7 +12,7 @@ aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
 
 
 def s3_uri(key: str) -> str:
-    return s3_directory.rstrip('/') + '/' + key.lstrip('/')
+    return _s3_uri(s3_directory, key)
 
 ###########
 # Extract:
