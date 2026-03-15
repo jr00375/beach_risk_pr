@@ -9,6 +9,10 @@ s3_directory = os.environ.get('S3_BUCKET_DIRECTORY')
 aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
 
+
+def s3_uri(key: str) -> str:
+    return s3_directory.rstrip('/') + '/' + key.lstrip('/')
+
 ###########
 # Extract:
 # Pull data from National Weather Prediction website
@@ -52,7 +56,7 @@ def compute_beach_centroids() -> gpd.GeoDataFrame:
     Compute centroid of all beaches with polygon objects
     """
 
-    beach_by_zone = pd.read_csv(s3_directory + '/final_beach_list_zones_geom.csv')  # contains zone and geometry
+    beach_by_zone = pd.read_csv(s3_uri('final_beach_list_zones_geom.csv'))  # contains zone and geometry
     beach_by_zone['geometry'] = beach_by_zone['geometry'].apply(
         wkt.loads)  # gpd is unable to convert geometry from csv, so need wkt conversion.
 
@@ -114,9 +118,8 @@ def save_to_s3(clean_data: pd.DataFrame):
     file_prefix = 'raw_rcs_'
     file_suffix = '.csv'
 
-    s3_path = s3_directory
     s3_key = file_prefix + file_date + file_suffix
-    s3_address = s3_path + '/' + s3_key
+    s3_address = s3_uri(s3_key)
 
     try:
         df.to_csv(s3_address, sep='|', index=False)

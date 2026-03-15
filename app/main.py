@@ -8,6 +8,10 @@ import streamlit_analytics
 s3_bucket_name = st.secrets["S3_BUCKET_NAME"]
 s3_directory = st.secrets["S3_BUCKET_DIRECTORY"]
 
+
+def s3_uri(key: str) -> str:
+    return s3_directory.rstrip('/') + '/' + key.lstrip('/')
+
 aws_access_key_id = st.secrets["AWS_ACCESS_KEY_ID"]
 aws_secret_access_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
 
@@ -32,14 +36,14 @@ def get_beach_data():
     # Get the most recent CSV file
     most_recent_csv = max(csv_files, key=lambda obj: s3.head_object(Bucket=s3_bucket_name, Key=obj)['LastModified'])
 
-    clean_data = pd.read_csv('s3://' + s3_bucket_name + '/' + most_recent_csv, sep='|')
+    clean_data = pd.read_csv(s3_uri(most_recent_csv), sep='|')
 
     return clean_data
 
 
 @st.cache_data(ttl=3600)
 def get_geocode_data():
-    return pd.read_csv(s3_directory + 'highres_geocode_beaches.csv')
+    return pd.read_csv(s3_uri('clean_data/highres_geocode_beaches.csv'))
 
 
 def filter_df_with_input(df):
@@ -106,7 +110,7 @@ def beach_table(beach_selection):
         elif val and 'HIGH' in val:
             return 'background-color: red;'
 
-    styled_df = df.style.map(highlight_df, subset=['risk_level'])
+    styled_df = df.style.applymap(highlight_df, subset=['risk_level'])
 
     return styled_df
 
